@@ -135,19 +135,45 @@ void draw(void) {
 }
 
 static int start, rotateAngle, layer, type;
+static int **list, volume = 19, index, recover, recoverTimes;
 void onRotate(int value) {
   if (start) {
     if (rotateAngle < 90) {
       rotateAngle += 1;
-      angle = 1 * c;
       rotate0(layer, type);
     } else {
-      start = 0;
       rotateAngle = 0;
       reviseCoordinates0(layer, type);
       swap0(layer, type);
-      layer = rand() % level;
-      type = (type + 1) % 3;
+
+      if (!recover) {
+        start = 0;
+        list[index][0] = layer;
+        list[index][1] = type;
+        if (volume - 1 == index) {
+          recover = 1;
+        } else {
+          index += 1;
+        }
+      }
+      if (recover) {
+        start = 1;
+        layer = list[index][0];
+        type = list[index][1];
+        saveCoordinates0(layer, type);
+        recoverTimes += 1;
+        if (3 == recoverTimes) {
+          recoverTimes = 0;
+          index -= 1;
+        }
+        if (index < 0) {
+          index = 0;
+          recover = 0;
+        }
+      } else {
+        layer = rand() % level;
+        type = (type + 1) % 3;
+      }
     }
     glutPostRedisplay();
   }
@@ -210,6 +236,11 @@ void reshape(int w, int h) {
 }
 int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
+  angle = 1 * c;
+  list = (int **)malloc((unsigned long)volume * sizeof(int *));
+  for (int i = 0; i < volume; i++) {
+    list[i] = (int *)malloc((unsigned long)2 * sizeof(int));
+  }
   initCube0();
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_MULTISAMPLE);
