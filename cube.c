@@ -4,7 +4,7 @@
 int size = 6, level = 7;
 Cube ***cube;
 // angle的值为1或-1,表示每次逆时针或顺时针旋转1度。
-int angle = 1;
+int angle;
 
 void setColor(Cube *cube, int surfaceIndex, float red, float green,
               float blue) {

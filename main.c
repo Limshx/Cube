@@ -140,10 +140,10 @@ static int **list, volume = 32, index, recover;
 void readList() {
   layer = list[index][0];
   type = list[index][1];
+  angle = list[index][2];
   saveCoordinates0(layer, type);
   index -= 1;
-  if (index < 0) {
-    index = 0;
+  if (-1 == index) {
     recover = 0;
   }
 }
@@ -157,31 +157,27 @@ void onRotate(int value) {
       rotateAngle = 0;
       reviseCoordinates0(layer, type);
       swap0(layer, type);
+      if (-1 == angle) {
+        // 顺时针旋转就是逆时针旋转3次，这样就不用新开一个函数了，所谓精简指令集。
+        swap0(layer, type);
+        swap0(layer, type);
+      }
       if (recover) {
-        if (volume - 1 != index) {
-          // 顺时针旋转就是逆时针旋转3次，这样就不用新开一个函数了，所谓精简指令集。
-          swap0(layer, type);
-          swap0(layer, type);
-        }
         readList();
       } else {
-        if (-1 == angle) {
-          angle = 1;
+        if (-1 == index) {
+          index = 0;
           start = 0;
-          swap0(layer, type);
-          swap0(layer, type);
         } else {
           list[index][0] = layer;
           list[index][1] = type;
+          list[index][2] = -angle;
           if (volume - 1 == index) {
             recover = 1;
-            angle = -1;
             readList();
           } else {
-            start = 0;
             index += 1;
-            layer = rand() % level;
-            type = rand() % 3;
+            start = 0;
           }
         }
       }
@@ -205,6 +201,10 @@ void Mouse(int button, int state, int x, int y) //处理鼠标点击
     currentButton = 1;
     if (!start) {
       start = 1;
+      layer = rand() % level;
+      type = rand() % 3;
+      // 允许顺时针旋转是必要的，不然就要转3次，这是很频繁的开销，所谓精简指令集也要顾及性能，当然理论模型也是必要的。
+      angle = (rand() % 2) ? 1 : -1;
       saveCoordinates0(layer, type);
     }
   }
@@ -252,12 +252,12 @@ int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
   list = (int **)malloc((unsigned long)volume * sizeof(int *));
   for (int i = 0; i < volume; i++) {
-    list[i] = (int *)malloc((unsigned long)2 * sizeof(int));
+    list[i] = (int *)malloc((unsigned long)3 * sizeof(int));
   }
   initCube0();
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_MULTISAMPLE);
-//  glutInitWindowPosition(100, 100);
+  //  glutInitWindowPosition(100, 100);
   glutInitWindowSize(fixedWindowSize, fixedWindowSize);
   glutCreateWindow("OpenGL");
   glEnable(GL_DEPTH_TEST);
