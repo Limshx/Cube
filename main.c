@@ -2,8 +2,8 @@
 #include <GL/glut.h>
 #include <math.h>
 #include <time.h>
-static double c = 3.14159 / 180; //弧度和角度转换参数
-static double r = 200;           // r是视点绕y轴的半径
+double c = 3.14159 / 180; //弧度和角度转换参数
+static double r = 200;    // r是视点绕y轴的半径
 static int alpha, beta; // alpha是视点绕y轴的角度, beta是视点高度即在y轴上的坐标
 static int preX, preY;
 
@@ -135,7 +135,19 @@ void draw(void) {
 }
 
 static int start, rotateAngle, layer, type;
-static int **list, volume = 19, index, recover, recoverTimes;
+static int **list, volume = 32, index, recover;
+
+void readList() {
+  layer = list[index][0];
+  type = list[index][1];
+  saveCoordinates0(layer, type);
+  index -= 1;
+  if (index < 0) {
+    index = 0;
+    recover = 0;
+  }
+}
+
 void onRotate(int value) {
   if (start) {
     if (rotateAngle < 90) {
@@ -145,34 +157,33 @@ void onRotate(int value) {
       rotateAngle = 0;
       reviseCoordinates0(layer, type);
       swap0(layer, type);
-
-      if (!recover) {
-        start = 0;
-        list[index][0] = layer;
-        list[index][1] = type;
-        if (volume - 1 == index) {
-          recover = 1;
-        } else {
-          index += 1;
-        }
-      }
       if (recover) {
-        start = 1;
-        layer = list[index][0];
-        type = list[index][1];
-        saveCoordinates0(layer, type);
-        recoverTimes += 1;
-        if (3 == recoverTimes) {
-          recoverTimes = 0;
-          index -= 1;
+        if (volume - 1 != index) {
+          // 顺时针旋转就是逆时针旋转3次，这样就不用新开一个函数了，所谓精简指令集。
+          swap0(layer, type);
+          swap0(layer, type);
         }
-        if (index < 0) {
-          index = 0;
-          recover = 0;
-        }
+        readList();
       } else {
-        layer = rand() % level;
-        type = (type + 1) % 3;
+        if (-1 == angle) {
+          angle = 1;
+          start = 0;
+          swap0(layer, type);
+          swap0(layer, type);
+        } else {
+          list[index][0] = layer;
+          list[index][1] = type;
+          if (volume - 1 == index) {
+            recover = 1;
+            angle = -1;
+            readList();
+          } else {
+            start = 0;
+            index += 1;
+            layer = rand() % level;
+            type = rand() % 3;
+          }
+        }
       }
     }
     glutPostRedisplay();
@@ -236,7 +247,6 @@ void reshape(int w, int h) {
 }
 int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
-  angle = 1 * c;
   list = (int **)malloc((unsigned long)volume * sizeof(int *));
   for (int i = 0; i < volume; i++) {
     list[i] = (int *)malloc((unsigned long)2 * sizeof(int));

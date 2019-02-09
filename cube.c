@@ -1,8 +1,10 @@
 #include "cube.h"
 #include <math.h>
+// size是组成魔方的小方块的边长，level是魔方阶数。
 int size = 6, level = 7;
 Cube ***cube;
-double angle;
+// angle的值为1或-1,表示每次逆时针或顺时针旋转1度。
+int angle = 1;
 
 void setColor(Cube *cube, int surfaceIndex, float red, float green,
               float blue) {
@@ -99,11 +101,11 @@ void traverse(int k, int type,
 
 void rotate1(Cube *cube, int vertexIndex, int x, int y) {
   cube->coordinate[vertexIndex][x] =
-      cube->coordinate[vertexIndex][x] * cos(angle) -
-      cube->coordinate[vertexIndex][y] * sin(angle);
+      cube->coordinate[vertexIndex][x] * cos(angle * c) -
+      cube->coordinate[vertexIndex][y] * sin(angle * c);
   cube->coordinate[vertexIndex][y] =
-      cube->coordinate[vertexIndex][x] * sin(angle) +
-      cube->coordinate[vertexIndex][y] * cos(angle);
+      cube->coordinate[vertexIndex][x] * sin(angle * c) +
+      cube->coordinate[vertexIndex][y] * cos(angle * c);
 }
 
 void rotate0(int k, int type) { traverse(k, type, rotate1); }
@@ -116,8 +118,8 @@ void saveCoordinates1(Cube *cube, int vertexIndex, int x, int y) {
 void saveCoordinates0(int k, int type) { traverse(k, type, saveCoordinates1); }
 
 void reviseCoordinates1(Cube *cube, int vertexIndex, int x, int y) {
-  cube->coordinate[vertexIndex][x] = -cube->preCoordinate[vertexIndex][y];
-  cube->coordinate[vertexIndex][y] = cube->preCoordinate[vertexIndex][x];
+  cube->coordinate[vertexIndex][x] = -cube->preCoordinate[vertexIndex][y] * angle;
+  cube->coordinate[vertexIndex][y] = cube->preCoordinate[vertexIndex][x] * angle;
 }
 
 // 旋转后调整Cube中coordinate次序，这样就能从其他层中获取无偏差坐标了，但这样时间复杂度似乎略大，故新增preCoordinate。
