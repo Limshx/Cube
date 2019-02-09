@@ -224,27 +224,30 @@ void onMouseMove(int x, int y) //处理鼠标拖动
 {
   // 左键拖动才旋转视角
   if (0 == currentButton) {
-    // printf("%d\n",du);
     alpha +=
         x -
         preX; //鼠标在窗口x轴方向上的增量加到视点绕y轴的角度上，这样就左右转了
     beta += y - preY; //鼠标在窗口y轴方向上的改变加到视点的y坐标上，就上下转了
     alpha = fixedAngle(alpha);
     beta = fixedAngle(beta);
-    // if(h>66.6f) h=66.6f; //视点y坐标作一些限制，不会使视点太奇怪
-    // else if(h<-1.0f) h=-1.0f;
     preX = x;
     preY = y; //把此时的鼠标坐标作为旧值，为下一次计算增量做准备
     glutPostRedisplay();
   }
 }
+
+static int fixedWindowSize = 888;
+
 void reshape(int w, int h) {
+  // 锁纵横比，不然改变窗口大小图形会变形或者说拉伸。
+  w = h = fixedWindowSize;
   glViewport(0, 0, w, h);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluPerspective(75, w / h, 1.0, 1000.0);
   glMatrixMode(GL_MODELVIEW);
 }
+
 int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
   list = (int **)malloc((unsigned long)volume * sizeof(int *));
@@ -254,8 +257,8 @@ int main(int argc, char *argv[]) {
   initCube0();
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_DEPTH | GLUT_MULTISAMPLE);
-  glutInitWindowPosition(100, 100);
-  glutInitWindowSize(888, 888);
+//  glutInitWindowPosition(100, 100);
+  glutInitWindowSize(fixedWindowSize, fixedWindowSize);
   glutCreateWindow("OpenGL");
   glEnable(GL_DEPTH_TEST);
   glutReshapeFunc(reshape);
