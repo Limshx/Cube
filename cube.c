@@ -1,8 +1,6 @@
 #include "cube.h"
 #include <math.h>
 Cube *cube[LEVEL][LEVEL][LEVEL];
-// angle的值为1或-1,表示每次逆时针或顺时针旋转1度。
-int angle;
 
 void setColor(Cube *cube, int surfaceIndex, float red, float green,
               float blue) {
@@ -67,18 +65,15 @@ void swap0(int i, int j, int k, int type) {
   }
 }
 
-// operation：为0表示逆时针，为1表示顺时针。
+static void (*swaps[2])(int i, int j, int k, int type) = {swap0, swap1};
+// operation：0表示顺时针，1表示逆时针。
 void swap(int k, int type, int operation) {
-  for (int i = 0; i < LEVEL; i++)
-    if (operation) {
-      for (int j = 0; j < LEVEL - 1 - i; j++)
-        if (onEdge0(i, j, k))
-          swap0(i, j, k, type);
-    } else {
-      for (int j = i + 1; j < LEVEL; j++)
-        if (onEdge0(i, j, k))
-          swap1(i, j, k, type);
-    }
+  for (int i = 0; i < LEVEL; i++) {
+    int base = operation * (i + 1);
+    for (int j = base; j < base + LEVEL - 1 - i; j++)
+      if (onEdge0(i, j, k))
+        swaps[operation](i, j, k, type);
+  }
   for (int i = 0; i < LEVEL / 2; i++)
     for (int j = 0; j < LEVEL; j++)
       if (onEdge0(i, j, k))
@@ -104,7 +99,13 @@ int onEdge0(int i, int j, int k) {
 
 static int coordinate[3][2] = {{0, 1}, {0, 2}, {1, 2}};
 // 函数指针真的很方便，Java或者说面向对象的话，当然就是传入一个对象，之形参是一个父类或者说抽象类或者说接口。或者把traverse()放到一个抽象类里，operate()作为其中的一个抽象方法，实例化该抽象类就要先实现该抽象方法，这个在Ippotim项目中用过。
-void traverse(int k, int type, void operate(Cube *, int, int, int)) {
+// 函数指针作为函数参数确实类似或者说就是回调，作为实参的函数（指针）就是作为形参的函数（指针）的实现。
+// 形参里直接写void operate(Cube *, int, int, int)也可以，甚至还可以似void
+// operate(Cube *cube, int vertexIndex, int x, int
+// y)之有参数名，但还是统一写法，毕竟确实是函数指针，而函数指针的定义在其他地方都是类似void
+// (*operate)(Cube *, int, int,
+// int)的，C语言（的标准）固然很灵活，但我们需要（代码）规范，取C语言（语法）的一个子集即可，不需要面面俱到或者说知道茴字的八种写法。
+void traverse(int k, int type, void (*operate)(Cube *, int, int, int)) {
   int x = coordinate[type][0], y = coordinate[type][1];
   for (int i = 0; i < LEVEL; i++)
     for (int j = 0; j < LEVEL; j++) {
@@ -114,6 +115,8 @@ void traverse(int k, int type, void operate(Cube *, int, int, int)) {
           // 用到结构体最好还是用指针，至少结构体作为函数参数就得传指针。像这里Cube
           // currentCube = getCube(i, j, k,
           // type);是像函数传参那样，是复制了一份，这是与Java不同的。
+          // 定义结构变量或结构数组后就已经分配空间或者说内存了，比如Cube
+          // cube或Cube cube[6]，不需要malloc或者说new了，这也是与Java不同的。
           Cube *currentCube = getCube(i, j, k, type);
           operate(currentCube, vertexIndex, x, y);
         }

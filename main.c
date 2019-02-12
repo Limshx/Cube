@@ -1,10 +1,13 @@
 #include "cube.h"
 #include <GL/glut.h>
 #include <math.h>
+#include <stdio.h>
 #include <time.h>
 
 double c = 3.14159 / 180; //弧度和角度转换参数
-static double r = 200;    // r是视点到原点距离
+// angle的值为1或-1,表示每次逆时针或顺时针旋转1度。
+int angle;
+static double r = 200; // r是视点到原点距离
 static int alpha, beta; // alpha是视点绕y轴的角度, beta是视点高度即在y轴上的坐标
 static int preX, preY;
 static int size = 6;
@@ -134,6 +137,7 @@ void draw(void) {
 
 static int start, rotateAngle, layer, type;
 #define VOLUME 32
+// 不用数组而是链表当然更好，但其实也够用了，日后如果觉得有必要再做打算。
 static int list[VOLUME][3], index, recover;
 
 void readList() {
@@ -155,9 +159,9 @@ void onRotate(int value) {
     } else {
       rotateAngle = 0;
       reviseCoordinates0(layer, type);
-        // 顺时针旋转就是逆时针旋转3次，这样就不用新开一个函数了，所谓精简指令集。
-        // 但这样要牺牲时间复杂度，权衡再三还是增加顺时针处理函数，之代码复杂度换时间复杂度。
-      swap(layer, type, angle < 0);
+      // 顺时针旋转就是逆时针旋转3次，这样就不用新开一个函数了，所谓精简指令集。
+      // 但这样要牺牲时间复杂度，权衡再三还是增加顺时针处理函数，之代码复杂度换时间复杂度。
+      swap(layer, type, angle > 0);
       if (recover) {
         readList();
       } else {
@@ -184,8 +188,7 @@ void onRotate(int value) {
 }
 
 static int currentButton; // 0是按下了左键，1是按下了右键
-void mouse(int button, int state, int x, int y) //处理鼠标点击
-{
+void mouseFunc(int button, int state, int x, int y) {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
     currentButton = 0;
     preX = x;
@@ -214,7 +217,7 @@ int fixedAngle(int angle) {
   return angle;
 }
 
-void onMouseMove(int x, int y) {
+void motionFunc(int x, int y) {
   // 左键拖动才旋转视角
   if (0 == currentButton) {
     alpha += x - preX;
@@ -225,6 +228,17 @@ void onMouseMove(int x, int y) {
     preY = y;
     glutPostRedisplay();
   }
+}
+
+void keyboardFunc(unsigned char key, int x, int y) {
+  printf("%d %d\n", x, y);
+  if (!start && 0 != index)
+    if ('r' == key) {
+      index -= 1;
+      recover = 1;
+      start = 1;
+      readList();
+    }
 }
 
 static int fixedWindowSize = 888;
@@ -250,10 +264,11 @@ int main(int argc, char *argv[]) {
   glEnable(GL_DEPTH_TEST);
   glutReshapeFunc(reshape);
   glutDisplayFunc(draw);
-  //  glutIdleFunc(draw); //设置不断调用显示函数
+  //  glutIdleFunc(draw);
   glutTimerFunc(1, onRotate, 0);
-  glutMouseFunc(mouse);
-  glutMotionFunc(onMouseMove);
+  glutMouseFunc(mouseFunc);
+  glutMotionFunc(motionFunc);
+  glutKeyboardFunc(keyboardFunc);
   glutMainLoop();
   return 0;
 }
